@@ -6,3 +6,4 @@ from app.models.profile import Profile  # noqa
 from app.models.post import SocialPost  # noqa
 from app.models.approval import ApprovalRequest  # noqa
 from app.models.analytics import AnalyticsMetric  # noqa
+from app.models.lead import Lead  # noqa
