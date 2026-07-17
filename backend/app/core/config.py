@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     # Frontend Redirect URL
     FRONTEND_URL: str = Field(default="http://localhost:3000")
 
+    # MinIO S3 Settings
+    MINIO_ENDPOINT: str = Field(default="localhost:9000")
+    MINIO_ACCESS_KEY: str = Field(default="minio_admin")
+    MINIO_SECRET_KEY: str = Field(default="minio_secret_key")
+    MINIO_BUCKET_NAME: str = Field(default="proposals")
+
     # API Config
     API_V1_STR: str = "/api/v1"
 

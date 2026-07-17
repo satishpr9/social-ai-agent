@@ -33,3 +33,6 @@ langchain-openai==0.2.14
 langchain-community==0.3.14
 asyncpg==0.30.0
 markdown==3.7
+boto3==1.36.0
+reportlab==4.3.1
+gunicorn==23.0.0

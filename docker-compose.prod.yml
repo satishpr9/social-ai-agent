@@ -1,0 +1,92 @@
+services:
+  # ============================================================================
+  # 1. PostgreSQL 17 Database Service (Alpine)
+  # ============================================================================
+  db:
+    image: postgres:17-alpine
+    container_name: social_db_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-social_ai_agent}
+    volumes:
+      - pg_data_prod:/var/lib/postgresql/data
+    # Gated from public access: no port mapping on host interface.
+    # Connects only to backend service via internal docker network bridge.
+
+  # ============================================================================
+  # 2. Redis 7 Cache & Task Queue (Alpine)
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: social_redis_prod
+    restart: unless-stopped
+    volumes:
+      - redis_data_prod:/data
+
+  # ============================================================================
+  # 3. Qdrant Vector Store
+  # ============================================================================
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: social_qdrant_prod
+    restart: unless-stopped
+    volumes:
+      - qdrant_data_prod:/qdrant/storage
+
+  # ============================================================================
+  # 4. MinIO S3-Compatible Object Store
+  # ============================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: social_minio_prod
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_secret_key}
+    volumes:
+      - minio_data_prod:/data
+
+  # ============================================================================
+  # 5. FastAPI Backend Application (Hardened Multi-Stage)
+  # ============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: social_backend_prod
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+      - qdrant
+      - minio
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      # DB URL maps directly to db service name on standard PG port
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password_change_me}@db:5432/${POSTGRES_DB:-social_ai_agent}
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_HOST=qdrant
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minio_admin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minio_secret_key}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - SMTP_HOST=${SMTP_HOST:-smtp.resend.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-resend}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL:-info@socialagent.ai}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+
+# ==============================================================================
+# Persistent Named Volumes Definition
+# ==============================================================================
+volumes:
+  pg_data_prod:
+  redis_data_prod:
+  qdrant_data_prod:
+  minio_data_prod:
