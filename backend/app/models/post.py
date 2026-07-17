@@ -1,9 +1,47 @@
 import uuid
 from datetime import datetime
 from typing import List
-from sqlalchemy import String, DateTime, ForeignKey, Text, ARRAY, text
+import json
+from sqlalchemy import String, DateTime, ForeignKey, Text, text
+from sqlalchemy.types import TypeDecorator, TEXT
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base
+
+
+class SQLiteCompatibleArray(TypeDecorator):
+    """
+    SQLAlchemy type decorator that translates PostgreSQL native ARRAYs
+    to SQLite JSON-serialized TEXT columns for testing.
+    """
+    impl = TEXT
+    cache_ok = True
+
+    def __init__(self, item_type, *args, **kwargs):
+        self.item_type = item_type
+        super().__init__(*args, **kwargs)
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(ARRAY(self.item_type))
+        return dialect.type_descriptor(TEXT())
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if dialect.name == "postgresql":
+            return value
+        return json.dumps(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        if dialect.name == "postgresql":
+            return value
+        try:
+            return json.loads(value)
+        except Exception:
+            return []
 
 
 class SocialPost(Base):
@@ -27,9 +65,9 @@ class SocialPost(Base):
         Text,
         nullable=False
     )
-    # Native PostgreSQL array of strings for target channels
+    # Cross-dialect safe array of strings for target channels
     platforms: Mapped[List[str]] = mapped_column(
-        ARRAY(String(50)),
+        SQLiteCompatibleArray(String(50)),
         nullable=False
     )
     status: Mapped[str] = mapped_column(

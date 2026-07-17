@@ -1,3 +1,4 @@
+import uuid
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
@@ -62,8 +63,13 @@ async def get_current_user(
     except (JWTError, ValidationError):
         raise credentials_exception
         
-    # Retrieve the user record asynchronously from PostgreSQL
-    result = await db.execute(select(User).filter(User.id == token_data.sub))
+    # Retrieve the user record asynchronously from PostgreSQL/SQLite
+    try:
+        sub_uuid = uuid.UUID(token_data.sub)
+    except ValueError:
+        raise credentials_exception
+
+    result = await db.execute(select(User).filter(User.id == sub_uuid))
     user = result.scalars().first()
     
     if user is None:

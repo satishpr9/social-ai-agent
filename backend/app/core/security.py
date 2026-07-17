@@ -1,5 +1,27 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Union
+import bcrypt
+
+# Monkeypatch bcrypt to maintain passlib compatibility (bcrypt >= 4.0.0 on Python 3.12+)
+# Bcrypt natively truncates passwords to 72 bytes. Modern Python bindings raise a ValueError
+# instead of truncating. We manually truncate here to match specs and bypass passlib init checks.
+_orig_hashpw = bcrypt.hashpw
+def _patched_hashpw(password, salt):
+    p_bytes = password.encode("utf-8") if isinstance(password, str) else password
+    if len(p_bytes) > 72:
+        p_bytes = p_bytes[:72]
+    return _orig_hashpw(p_bytes, salt)
+
+_orig_checkpw = bcrypt.checkpw
+def _patched_checkpw(password, hashed):
+    p_bytes = password.encode("utf-8") if isinstance(password, str) else password
+    if len(p_bytes) > 72:
+        p_bytes = p_bytes[:72]
+    return _orig_checkpw(p_bytes, hashed)
+
+bcrypt.hashpw = _patched_hashpw
+bcrypt.checkpw = _patched_checkpw
+
 from jose import jwt
 from passlib.context import CryptContext
 from app.core.config import settings
