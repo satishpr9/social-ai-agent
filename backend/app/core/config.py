@@ -34,6 +34,20 @@ class Settings(BaseSettings):
     N8N_WEBHOOK_URL: str = Field(default="http://localhost:5678/webhook/publish")
     N8N_SHARED_SECRET: str = Field(default="n8n-shared-secret-key-keep-safe")
 
+    # SMTP Email Settings
+    SMTP_HOST: str = Field(default="smtp.resend.com")
+    SMTP_PORT: int = Field(default=587)
+    SMTP_USER: str = Field(default="resend")
+    SMTP_PASSWORD: str = Field(default="")
+    EMAILS_FROM_EMAIL: str = Field(default="info@socialagent.ai")
+    EMAILS_FROM_NAME: str = Field(default="Social AI Agent")
+    
+    # Resend API Settings
+    RESEND_API_KEY: str = Field(default="")
+    
+    # Frontend Redirect URL
+    FRONTEND_URL: str = Field(default="http://localhost:3000")
+
     # API Config
     API_V1_STR: str = "/api/v1"
 

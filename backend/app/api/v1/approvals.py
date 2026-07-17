@@ -1,8 +1,9 @@
 import uuid
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.db.session import get_db
 from app.api.deps import get_current_user, RoleChecker
 from app.models.user import User
@@ -12,6 +13,7 @@ from app.schemas.post import (
     ApprovalRequestResponse
 )
 from app.services.approval import ApprovalService
+from app.services.email import EmailService
 
 router = APIRouter()
 
@@ -26,18 +28,32 @@ require_editor_or_admin = Depends(RoleChecker(["admin", "editor"]))
 )
 async def submit_post(
     post_in: SocialPostCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> ApprovalRequestResponse:
     """
     Submit a newly generated blog post for editor/admin review.
     Creates both the post and the linked approval request.
+    Dispatches a review notification email in the background.
     """
     approval_service = ApprovalService(db)
     approval = await approval_service.submit_post_for_approval(
         post_in=post_in,
         user_id=current_user.id
     )
+
+    # Dispatch email notification in the background
+    email_service = EmailService()
+    background_tasks.add_task(
+        email_service.send_approval_email,
+        to_email=settings.EMAILS_FROM_EMAIL,
+        approval_id=approval.id,
+        post_title=post_in.title,
+        submitter_name=current_user.email,
+        platforms=post_in.platforms
+    )
+
     return approval
 
 
