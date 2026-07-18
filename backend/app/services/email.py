@@ -86,12 +86,13 @@ class EmailService:
         approval_id: uuid.UUID,
         post_title: str,
         submitter_name: str,
-        platforms: List[str]
+        platforms: List[str],
+        token: str
     ) -> bool:
         """
         Formats and sends an HTML approval notification email to editors/admins.
         """
-        review_url = f"{settings.FRONTEND_URL}/approvals/{approval_id}"
+        review_url = f"{settings.BACKEND_URL}/api/v1/approvals/{approval_id}/review-email?token={token}"
         platforms_str = ", ".join([p.capitalize() for p in platforms])
         subject = f"Review Required: '{post_title}'"
 

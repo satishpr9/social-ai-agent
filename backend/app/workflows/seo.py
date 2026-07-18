@@ -1,7 +1,7 @@
 import os
 import re
 from typing import TypedDict, List
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import StateGraph, END
 
@@ -48,12 +48,12 @@ async def generate_blog_node(state: SEOState) -> dict:
     Falls back to a structured markdown template if no LLM API key is present.
     """
     report = state.get("research_report", "")
-    openai_key = os.environ.get("OPENAI_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 
     # 1. Attempt LLM Generation
-    if openai_key and report:
+    if gemini_key and report:
         try:
-            llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_key, temperature=0.7)
+            llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=gemini_key, temperature=0.7)
             prompt = ChatPromptTemplate.from_template(
                 "You are an expert technical blogger and copywriter.\n"
                 "Write an engaging, authoritative, and SEO-friendly blog post in Markdown format "
@@ -94,13 +94,13 @@ async def generate_title_slug_node(state: SEOState) -> dict:
     Generates a catchy blog title and constructs a URL-safe slug.
     """
     blog_content = state.get("generated_blog_content", "")
-    openai_key = os.environ.get("OPENAI_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     title = "Leveraging LangGraph and FastAPI for Automated Social Marketing"
 
     # 1. Attempt LLM Title Generation
-    if openai_key and blog_content:
+    if gemini_key and blog_content:
         try:
-            llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_key, temperature=0.8)
+            llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=gemini_key, temperature=0.8)
             prompt = ChatPromptTemplate.from_template(
                 "Read the following blog post and suggest a single, catchy, SEO-friendly headline/title.\n"
                 "Respond with only the title string and nothing else.\n\n"
@@ -127,7 +127,7 @@ async def generate_seo_metadata_node(state: SEOState) -> dict:
     """
     blog_content = state.get("generated_blog_content", "")
     title = state.get("generated_title", "")
-    openai_key = os.environ.get("OPENAI_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 
     # Default fallbacks
     keywords = ["automation", "fastapi", "nextjs", "saas", "ai marketing"]
@@ -135,9 +135,9 @@ async def generate_seo_metadata_node(state: SEOState) -> dict:
     image_prompt = "A high-tech digital workspace with abstract glowing network connections linking modern code interfaces. Hyper-detailed, 3D render, dark mode aesthetic."
 
     # 1. Attempt LLM Metadata Generation
-    if openai_key and blog_content:
+    if gemini_key and blog_content:
         try:
-            llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_key, temperature=0.5)
+            llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=gemini_key, temperature=0.5)
             prompt = ChatPromptTemplate.from_template(
                 "Based on the following blog title and content, generate SEO metadata:\n"
                 "Title: {title}\n\n"

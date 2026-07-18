@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     
     # Frontend Redirect URL
     FRONTEND_URL: str = Field(default="http://localhost:3000")
+    BACKEND_URL: str = Field(default="http://localhost:8000")
 
     # MinIO S3 Settings
     MINIO_ENDPOINT: str = Field(default="localhost:9000")

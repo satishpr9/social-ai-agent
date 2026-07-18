@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class SocialPostBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     content: str = Field(..., min_length=1)
-    platforms: List[str] = Field(..., min_items=1)
+    platforms: List[str] = Field(..., min_length=1)
     scheduled_publish_time: datetime | None = None
 
 

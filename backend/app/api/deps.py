@@ -5,6 +5,7 @@ from jose import jwt, JWTError
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload
 
 from app.core.config import settings
 from app.db.session import get_db
@@ -69,7 +70,11 @@ async def get_current_user(
     except ValueError:
         raise credentials_exception
 
-    result = await db.execute(select(User).filter(User.id == sub_uuid))
+    result = await db.execute(
+        select(User)
+        .options(joinedload(User.profile))
+        .filter(User.id == sub_uuid)
+    )
     user = result.scalars().first()
     
     if user is None:

@@ -7,6 +7,7 @@ from app.api.v1.n8n import router as n8n_router
 from app.api.v1.analytics import router as analytics_router
 from app.api.v1.crm import router as crm_router
 from app.api.v1.proposals import router as proposals_router
+from app.api.v1.workflows import router as workflows_router
 
 api_router = APIRouter()
 
@@ -58,3 +59,9 @@ api_router.include_router(
     prefix="/v1/proposals",
     tags=["Proposals"]
 )
+
+api_router.include_router(
+    workflows_router,
+    prefix="/v1/workflows",
+    tags=["Workflows"]
+)

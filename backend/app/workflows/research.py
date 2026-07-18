@@ -1,6 +1,6 @@
 import os
 from typing import TypedDict, List
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import StateGraph, END
 
@@ -64,13 +64,13 @@ async def rank_node(state: ResearchState) -> dict:
     """
     deduped = state.get("deduplicated_results", [])
     query = state.get("query", "").lower()
-    openai_key = os.environ.get("OPENAI_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 
     # 1. Attempt LLM ranking if API Key is present
-    if openai_key:
+    if gemini_key:
         try:
             # We initialize a light, fast model for ranking
-            llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_key, temperature=0)
+            llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=gemini_key, temperature=0)
             
             prompt = ChatPromptTemplate.from_template(
                 "You are an AI research ranker. Rate the relevance of each article snippet to the query: '{query}'.\n"
@@ -136,12 +136,12 @@ async def summarize_node(state: ResearchState) -> dict:
     """
     ranked = state.get("ranked_results", [])
     query = state.get("query", "")
-    openai_key = os.environ.get("OPENAI_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 
     # 1. Attempt LLM Summarization
-    if openai_key and ranked:
+    if gemini_key and ranked:
         try:
-            llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_key, temperature=0.3)
+            llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=gemini_key, temperature=0.3)
             prompt = ChatPromptTemplate.from_template(
                 "You are an expert market analyst writing a briefing report.\n"
                 "Compile a professional Markdown summary of the following research articles regarding '{query}'.\n"

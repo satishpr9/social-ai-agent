@@ -19,7 +19,7 @@ async def search_web(query: str, max_results: int = 5) -> list[dict[str, str]]:
             from tavily import TavilyClient
             client = TavilyClient(api_key=tavily_key)
             # Fetch search results
-            response = client.search(q=query, max_results=max_results, topic="news")
+            response = client.search(query=query, max_results=max_results, topic="news")
             results = []
             for item in response.get("results", []):
                 results.append({

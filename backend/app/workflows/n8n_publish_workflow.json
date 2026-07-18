@@ -1,0 +1,317 @@
+{
+  "name": "FastAPI Social Post Publisher",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "publish-content",
+        "authentication": "headerAuth",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "e227ea1a-4712-4217-bc45-e6a6b5c3be99",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        250,
+        360
+      ],
+      "credentials": {
+        "headerAuth": {
+          "id": "mock-cred-id",
+          "name": "FastAPI Shared Secret Header"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item;\nconst postContent = item.json.content;\n\n// Extraction helper\nfunction extractSection(content, markerHeader) {\n  if (!content) return \"\";\n  const parts = content.split(markerHeader);\n  if (parts.length < 2) return \"\";\n  const subParts = parts[1].split(\"---\");\n  return subParts[0].trim();\n}\n\n// Populate platform specific captions\nitem.json.linkedin_caption = extractSection(postContent, \"### 💼 LinkedIn Draft\");\nitem.json.twitter_caption = extractSection(postContent, \"### 🐦 Twitter/X Thread Draft\");\nitem.json.facebook_caption = extractSection(postContent, \"### 👥 Facebook Draft\");\nitem.json.instagram_caption = extractSection(postContent, \"### 📸 Instagram Draft\");\n\nreturn item;"
+      },
+      "id": "d0cd0b8f-3ee0-47b1-912a-3bb1f7b0365c",
+      "name": "Extract Captions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        470,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.platforms }}",
+                    "rightValue": "linkedin",
+                    "operator": "contains"
+                  }
+                ],
+                "combinator": "and"
+                  }
+                },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.platforms }}",
+                    "rightValue": "twitter",
+                    "operator": "contains"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f5f24213-91c6-4318-ae2d-c11df8350b99",
+      "name": "Switch Platforms",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        680,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.linkedin_caption }}"
+      },
+      "id": "022718ef-8712-4ebf-b32c-76e5df48bc04",
+      "name": "LinkedIn API Share",
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        920,
+        240
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.twitter_caption }}"
+      },
+      "id": "c223a5cf-81b4-4b5b-86ea-d1c925fe890e",
+      "name": "Twitter API Tweet",
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [
+        920,
+        480
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "wait",
+        "outputFormat": "input2"
+      },
+      "id": "a228fa4c-567a-42c5-84e2-63b71bf9e2ee",
+      "name": "Merge Outcomes",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $node[\"LinkedIn API Share\"].json.error || $node[\"Twitter API Tweet\"].json.error }}",
+              "operator": "isEmpty"
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "2ff1500f-8de1-419b-a010-8ea730fbdf23",
+      "name": "Check for Errors",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/v1/n8n/callback",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "specifyHeaders": {
+          "keyvalue": [
+            {
+              "name": "X-App-Secret",
+              "value": "YOUR_N8N_SHARED_SECRET_HERE"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"post_id\": \"{{ $node[\"Webhook Trigger\"].json.post_id }}\",\n  \"status\": \"success\"\n}"
+      },
+      "id": "99b9cf2a-9cb8-4a11-826a-1bbcd87796d1",
+      "name": "Callback Success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1620,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/v1/n8n/callback",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "specifyHeaders": {
+          "keyvalue": [
+            {
+              "name": "X-App-Secret",
+              "value": "YOUR_N8N_SHARED_SECRET_HERE"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"post_id\": \"{{ $node[\"Webhook Trigger\"].json.post_id }}\",\n  \"status\": \"failed\",\n  \"error_message\": \"n8n publish failed. LinkedIn Error: {{ $node['LinkedIn API Share'].json.error || 'None' }}. Twitter Error: {{ $node['Twitter API Tweet'].json.error || 'None' }}\"\n}"
+      },
+      "id": "33b5df5a-1fa2-43bb-a5a4-cb2bcde890f5",
+      "name": "Callback Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1620,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Captions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Captions": {
+      "main": [
+        [
+          {
+            "node": "Switch Platforms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Platforms": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn API Share",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Twitter API Tweet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn API Share": {
+      "main": [
+        [
+          {
+            "node": "Merge Outcomes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Twitter API Tweet": {
+      "main": [
+        [
+          {
+            "node": "Merge Outcomes",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Outcomes": {
+      "main": [
+        [
+          {
+            "node": "Check for Errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Errors": {
+      "main": [
+        [
+          {
+            "node": "Callback Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6",
+  "id": "1",
+  "meta": {
+    "templateId": "fastapi-social-publisher"
+  }
+}

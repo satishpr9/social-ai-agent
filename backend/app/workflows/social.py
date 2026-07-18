@@ -1,7 +1,7 @@
 import os
 import re
 from typing import TypedDict, List
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import StateGraph, END
 
@@ -86,11 +86,11 @@ async def generate_linkedin_node(state: SocialState) -> dict:
     """
     title = state.get("blog_title", "")
     content = state.get("blog_content", "")
-    openai_key = os.environ.get("OPENAI_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 
-    if openai_key:
+    if gemini_key:
         try:
-            llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_key, temperature=0.7)
+            llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=gemini_key, temperature=0.7)
             prompt = ChatPromptTemplate.from_template(
                 "Write a professional LinkedIn post summarizing the key insights of this blog post:\n"
                 "Title: {title}\n"
@@ -123,11 +123,11 @@ async def generate_twitter_node(state: SocialState) -> dict:
     """
     title = state.get("blog_title", "")
     content = state.get("blog_content", "")
-    openai_key = os.environ.get("OPENAI_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 
-    if openai_key:
+    if gemini_key:
         try:
-            llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_key, temperature=0.6)
+            llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=gemini_key, temperature=0.6)
             prompt = ChatPromptTemplate.from_template(
                 "Read this blog post: '{title}'. Write a Twitter/X thread summarizing it.\n"
                 "Format your output as individual tweets separated by '---' on new lines.\n"
@@ -172,11 +172,11 @@ async def generate_facebook_node(state: SocialState) -> dict:
     """
     title = state.get("blog_title", "")
     content = state.get("blog_content", "")
-    openai_key = os.environ.get("OPENAI_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 
-    if openai_key:
+    if gemini_key:
         try:
-            llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_key, temperature=0.8)
+            llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=gemini_key, temperature=0.8)
             prompt = ChatPromptTemplate.from_template(
                 "Write an engaging, conversational Facebook post for this article:\n"
                 "Title: {title}\n"
@@ -204,11 +204,11 @@ async def generate_instagram_node(state: SocialState) -> dict:
     """
     title = state.get("blog_title", "")
     content = state.get("blog_content", "")
-    openai_key = os.environ.get("OPENAI_API_KEY")
+    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 
-    if openai_key:
+    if gemini_key:
         try:
-            llm = ChatOpenAI(model="gpt-4o-mini", api_key=openai_key, temperature=0.7)
+            llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=gemini_key, temperature=0.7)
             prompt = ChatPromptTemplate.from_template(
                 "Create a compelling Instagram caption for a post about this article:\n"
                 "Title: {title}\n"
